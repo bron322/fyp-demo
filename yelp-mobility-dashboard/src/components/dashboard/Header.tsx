@@ -49,7 +49,7 @@ const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* User Selector */}
-          <DropdownMenu>
+          {/* <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors">
               <div className="text-left">
                 <p className="text-xs text-muted-foreground">Sample User</p>
@@ -88,7 +88,7 @@ const Header: React.FC<HeaderProps> = ({
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu> */}
         </div>
 
         {/* Tab navigation */}
