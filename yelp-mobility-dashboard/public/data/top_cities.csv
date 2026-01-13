@@ -1,11 +1,11 @@
-city,state,restaurants,reviews
-Philadelphia,PA,2762,581620
-Tucson,AZ,1410,187582
-Nashville,TN,1348,276124
-Indianapolis,IN,1328,187860
-New Orleans,LA,1322,454033
-Tampa,FL,1302,227683
-Reno,NV,1165,199571
-Saint Louis,MO,952,151343
-Santa Barbara,CA,794,174425
-Boise,ID,589,54823
+city,state,restaurants,sample_reviews
+Philadelphia,PA,1657,3604
+Indianapolis,IN,816,1422
+New Orleans,LA,774,2192
+Nashville,TN,764,1608
+Tampa,FL,720,1271
+Tucson,AZ,688,1127
+Saint Louis,MO,527,1014
+Reno,NV,520,1137
+Santa Barbara,CA,320,801
+Boise,ID,306,541

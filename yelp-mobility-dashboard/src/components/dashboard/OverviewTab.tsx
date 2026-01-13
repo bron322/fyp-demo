@@ -156,7 +156,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                     {city.businessCount.toLocaleString()}
                   </td>
                   <td className="text-right text-muted-foreground">
-                    {city.reviewCount.toLocaleString()}
+                    {city.sampleReviews.toLocaleString()}
                   </td>
                 </tr>
               ))}

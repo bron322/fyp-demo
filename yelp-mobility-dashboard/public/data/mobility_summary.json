@@ -1,0 +1,9 @@
+{
+  "one_area_pct": 67.04055220017257,
+  "two_area_pct": 2.9335634167385676,
+  "avg_hub_distance_km": 13.921671070619169,
+  "typical_travel_range_km": 1.4803270247448035,
+  "eps_km": 5.0,
+  "min_samples": 3,
+  "n_users": 1159
+}

@@ -56,6 +56,9 @@
     --coral-light: 10 80% 92%;
     --mint: 160 55% 50%;
     --mint-light: 160 50% 92%;
+    /* Custom tokens for the dashboard */
+    --blue: 215 90% 55%;
+    --blue-light: 215 85% 92%;
 
     /* Hub colors */
     --hub-home: 270 70% 55%;
@@ -133,6 +136,9 @@
     --coral-light: 10 50% 18%;
     --mint: 160 50% 50%;
     --mint-light: 160 35% 18%;
+    /* Custom tokens for the dashboard */
+    --blue: 215 85% 60%;
+    --blue-light: 215 55% 18%;
 
     --hub-home: 270 65% 60%;
     --hub-work: 25 90% 58%;
@@ -263,6 +269,15 @@
     color: hsl(var(--orange));
   }
 
+  .icon-container.blue {
+    background-color: hsl(var(--blue-light));
+    color: hsl(var(--blue));
+  }
+  
+  .stat-card.blue::before {
+    background: hsl(var(--blue));
+  }
+
   .icon-container.teal {
     background-color: hsl(var(--teal-light));
     color: hsl(var(--teal));
@@ -372,4 +387,10 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* wherever your stat-card + icon-container variants live */
+.stat-card.blue {
+  /* match your existing pattern */
+  border-color: rgb(59 130 246 / 0.25); /* blue-500 */
 }

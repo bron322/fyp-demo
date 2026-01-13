@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// src/components/dashboard/MobilityTab.tsx
+import React, { useState } from "react";
 import {
   Home,
   Briefcase,
@@ -9,89 +10,135 @@ import {
   Eye,
   EyeOff,
   Target,
-} from 'lucide-react';
-import { MobilitySummary, mockHubVisualization } from '@/data/dashboardData';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+} from "lucide-react";
 
-interface MobilityTabProps {
-  summary: MobilitySummary;
-}
+import { useMobilityData } from "@/hooks/useMobilityData";
+import { mockHubVisualization } from "@/data/dashboardData";
 
-const MobilityTab: React.FC<MobilityTabProps> = ({ summary }) => {
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+
+const MobilityTab: React.FC = () => {
+  const { summary, rows, loading, error } = useMobilityData();
+
   const [showHubs, setShowHubs] = useState(true);
   const [showRadius, setShowRadius] = useState(true);
+  const [showResearchNotes, setShowResearchNotes] = useState(true);
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div>
+          <h2 className="section-title flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-purple" />
+            Mobility Summary
+          </h2>
+          <p className="section-subtitle">Loading mobility data…</p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="dashboard-card h-[120px] animate-pulse" />
+          ))}
+        </div>
+
+        <div className="dashboard-card h-[420px] animate-pulse" />
+      </div>
+    );
+  }
+
+  if (error || !summary) {
+    return (
+      <div className="space-y-4 animate-fade-in">
+        <div className="friendly-callout">
+          <div className="flex items-start gap-3">
+            <div className="icon-container orange shrink-0">
+              <Info className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-foreground mb-1">
+                Unable to load mobility data
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {error ?? "Summary data is missing."}
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Check that <code>/public/data/mobility_summary.json</code> and{" "}
+                <code>/public/data/user_mobility_table.csv</code> exist and are
+                accessible.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const explorerPercent = Math.max(
+    0,
+    Math.min(100, Number((100 - summary.singleHubPercent - summary.twoHubPercent).toFixed(1)))
+  );
 
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Mobility Summary Cards */}
-      <div>
-        <h2 className="section-title flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-purple" />
-          Mobility Summary
-        </h2>
-        <p className="section-subtitle">
-          Understanding how users travel to eat
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="stat-card teal">
+        <div className="icon-container teal mb-3">
+          <Home className="w-5 h-5" />
+        </div>
+        <p className="text-3xl font-bold text-foreground mb-1">
+          {summary.singleHubPercent}%
         </p>
+        <p className="text-sm font-semibold text-foreground">One-area users</p>
+        <p className="text-xs text-muted-foreground">Eat mostly near one place</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="stat-card teal">
-          <div className="icon-container teal mb-3">
-            <Home className="w-5 h-5" />
-          </div>
-          <p className="text-3xl font-bold text-foreground mb-1">
-            {summary.singleHubPercent}%
-          </p>
-          <p className="text-sm font-semibold text-foreground">One-area users</p>
-          <p className="text-xs text-muted-foreground">
-            Eat mostly near one place
-          </p>
+      <div className="stat-card purple">
+        <div className="icon-container purple mb-3">
+          <ArrowRight className="w-5 h-5" />
         </div>
-
-        <div className="stat-card purple">
-          <div className="icon-container purple mb-3">
-            <ArrowRight className="w-5 h-5" />
-          </div>
-          <p className="text-3xl font-bold text-foreground mb-1">
-            {summary.twoHubPercent}%
-          </p>
-          <p className="text-sm font-semibold text-foreground">Two-area users</p>
-          <p className="text-xs text-muted-foreground">
-            Home + work pattern
-          </p>
-        </div>
-
-        <div className="stat-card orange">
-          <div className="icon-container orange mb-3">
-            <Target className="w-5 h-5" />
-          </div>
-          <p className="text-3xl font-bold text-foreground mb-1">
-            {summary.avgHubSeparation} km
-          </p>
-          <p className="text-sm font-semibold text-foreground">
-            Average hub distance
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Between home & work areas
-          </p>
-        </div>
-
-        <div className="stat-card coral">
-          <div className="icon-container coral mb-3">
-            <MapPin className="w-5 h-5" />
-          </div>
-          <p className="text-3xl font-bold text-foreground mb-1">
-            {summary.medianTravelRange} km
-          </p>
-          <p className="text-sm font-semibold text-foreground">
-            Typical travel range
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Median distance traveled
-          </p>
-        </div>
+        <p className="text-3xl font-bold text-foreground mb-1">
+          {summary.twoHubPercent}%
+        </p>
+        <p className="text-sm font-semibold text-foreground">Two-area users</p>
+        <p className="text-xs text-muted-foreground">Home + work pattern</p>
       </div>
+
+      {/* NEW: Explorer % */}
+      <div className="stat-card blue">
+        <div className="icon-container blue mb-3">
+          <Compass className="w-5 h-5" />
+        </div>
+        <p className="text-3xl font-bold text-foreground mb-1">
+          {explorerPercent}%
+        </p>
+        <p className="text-sm font-semibold text-foreground">Explorers</p>
+        <p className="text-xs text-muted-foreground">Wide-spread dining</p>
+      </div>
+
+      <div className="stat-card orange">
+        <div className="icon-container orange mb-3">
+          <Target className="w-5 h-5" />
+        </div>
+        <p className="text-3xl font-bold text-foreground mb-1">
+          {summary.avgHubSeparation} km
+        </p>
+        <p className="text-sm font-semibold text-foreground">Average hub distance</p>
+        <p className="text-xs text-muted-foreground">Between home & work areas</p>
+      </div>
+
+      <div className="stat-card coral">
+        <div className="icon-container coral mb-3">
+          <MapPin className="w-5 h-5" />
+        </div>
+        <p className="text-3xl font-bold text-foreground mb-1">
+          {summary.medianTravelRange} km
+        </p>
+        <p className="text-sm font-semibold text-foreground">Typical travel range</p>
+        <p className="text-xs text-muted-foreground">Median distance traveled</p>
+      </div>
+    </div>
 
       {/* What this means callout */}
       <div className="friendly-callout">
@@ -100,17 +147,123 @@ const MobilityTab: React.FC<MobilityTabProps> = ({ summary }) => {
             <Info className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-bold text-foreground mb-1">
-              What this means
-            </h3>
+            <h3 className="font-bold text-foreground mb-1">What this means</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Some users regularly eat in two clusters of areas — like near home
-              and near their workplace. Using only one center point (centroid)
-              can be misleading because it might land somewhere in between,
-              where the user never actually goes!
+              Some users regularly eat in two clusters of areas — like near home and near
+              their workplace. Using only one center point (centroid) can be misleading
+              because it might land somewhere in between, where the user never actually goes!
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Research Notes (Supervisor Script + Sanity Check) */}
+      <div className="dashboard-card">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h3 className="font-bold text-foreground">Research Notes</h3>
+            <p className="text-sm text-muted-foreground">
+              Sanity check reasoning for DBSCAN mobility hubs.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Switch
+              id="show-research-notes"
+              checked={showResearchNotes}
+              onCheckedChange={setShowResearchNotes}
+            />
+            <Label htmlFor="show-research-notes" className="text-sm cursor-pointer">
+              Show notes
+            </Label>
+          </div>
+        </div>
+
+        {showResearchNotes && (
+          <div className="mt-4 space-y-4">
+            {/* Supervisor-ready script */}
+            <div className="rounded-xl bg-secondary p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm text-foreground leading-relaxed">
+                    I applied DBSCAN with a haversine metric on restaurant-only visits.
+                    Epsilon was selected using k-distance analysis, with 5 km balancing cluster stability and noise.
+                    Users were classified based on hub dominance and separation.
+                    <br />
+                    <br />
+                    Results show that ~{summary.singleHubPercent}% of users dine primarily within one neighborhood,
+                    ~{summary.twoHubPercent}% exhibit a clear two-area dining pattern, and typical travel range within a hub is ~{summary.medianTravelRange} km.
+                    This indicates that centroid-based models are adequate for most users but systematically fail for a small yet meaningful subset.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sanity-check reasoning */}
+            <div className="rounded-xl border p-4">
+              <p className="text-xs font-semibold text-muted-foreground mb-3">
+                ✅ SANITY CHECK
+              </p>
+
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <div>
+                  <span className="font-semibold text-foreground">
+                    One-area users ≈ {summary.singleHubPercent}%
+                  </span>
+                  <div className="mt-1">
+                    Plausible for urban Yelp-like data: most people eat near one dominant neighborhood.
+                    Restaurant-only filtering + DBSCAN naturally increases this share by reducing “travel noise”.
+                  </div>
+                </div>
+
+                <div>
+                  <span className="font-semibold text-foreground">
+                    Two-area users ≈ {summary.twoHubPercent}%
+                  </span>
+                  <div className="mt-1">
+                    Low but academically interesting: strict criteria (both hubs meaningful, separated, not vacation/move noise)
+                    makes true “home + work” dining patterns rare — which is a thesis insight, not a flaw.
+                  </div>
+                </div>
+
+                <div>
+                  <span className="font-semibold text-foreground">
+                    Average hub separation ≈ {summary.avgHubSeparation} km
+                  </span>
+                  <div className="mt-1">
+                    This matches a commute-scale signal (home ↔ work / city ↔ suburb), not tiny neighborhood splits and not long-distance vacations.
+                  </div>
+                </div>
+
+                <div>
+                  <span className="font-semibold text-foreground">
+                    Typical travel range ≈ {summary.medianTravelRange} km
+                  </span>
+                  <div className="mt-1">
+                    Interpretable and defendable: most users’ restaurant activity is tightly clustered within ~1–2 km of their main dining hub.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Why it matters */}
+            <div className="friendly-callout">
+              <div className="flex items-start gap-3">
+                <div className="icon-container purple shrink-0">
+                  <Target className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-foreground mb-1">Why this matters</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    A single centroid works for the majority, but it can systematically misrepresent multi-hub users
+                    by placing the “average location” somewhere they never actually visit. Two-hub detection helps ensure
+                    recommendations stay within real activity zones.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main content: Map + Mobility Types */}
@@ -122,6 +275,7 @@ const MobilityTab: React.FC<MobilityTabProps> = ({ summary }) => {
               <span className="chip-purple">Interactive</span>
               Food Activity Map
             </h3>
+
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Switch
@@ -130,10 +284,15 @@ const MobilityTab: React.FC<MobilityTabProps> = ({ summary }) => {
                   onCheckedChange={setShowHubs}
                 />
                 <Label htmlFor="show-hubs" className="text-sm cursor-pointer">
-                  {showHubs ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  {showHubs ? (
+                    <Eye className="w-4 h-4 inline-block" />
+                  ) : (
+                    <EyeOff className="w-4 h-4 inline-block" />
+                  )}
                   <span className="ml-1">Show hubs</span>
                 </Label>
               </div>
+
               <div className="flex items-center gap-2">
                 <Switch
                   id="show-radius"
@@ -152,12 +311,7 @@ const MobilityTab: React.FC<MobilityTabProps> = ({ summary }) => {
             {/* Grid background */}
             <svg className="absolute inset-0 w-full h-full">
               <defs>
-                <pattern
-                  id="grid"
-                  width="40"
-                  height="40"
-                  patternUnits="userSpaceOnUse"
-                >
+                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
                   <path
                     d="M 40 0 L 0 0 0 40"
                     fill="none"
@@ -228,12 +382,10 @@ const MobilityTab: React.FC<MobilityTabProps> = ({ summary }) => {
                         cy={`${hub.y}%`}
                         r="16"
                         className={`${
-                          hub.hubType === 'home'
-                            ? 'fill-purple'
-                            : 'fill-orange'
+                          hub.hubType === "home" ? "fill-purple" : "fill-orange"
                         } stroke-white stroke-3`}
                       />
-                      {hub.hubType === 'home' ? (
+                      {hub.hubType === "home" ? (
                         <foreignObject
                           x={`calc(${hub.x}% - 8px)`}
                           y={`calc(${hub.y}% - 8px)`}
@@ -282,14 +434,20 @@ const MobilityTab: React.FC<MobilityTabProps> = ({ summary }) => {
               </div>
             </div>
 
-            {/* Distance label */}
+            {/* Distance label (now driven by summary) */}
             {showHubs && (
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card/95 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg">
                 <p className="text-sm font-semibold text-foreground">
-                  8.7 km apart
+                  {summary.avgHubSeparation} km apart
                 </p>
               </div>
             )}
+          </div>
+
+          {/* Optional: tiny footer showing CSV size */}
+          <div className="mt-3 text-xs text-muted-foreground">
+            Loaded <span className="font-semibold text-foreground">{rows.length}</span>{" "}
+            user rows from CSV.
           </div>
         </div>
 
@@ -311,8 +469,8 @@ const MobilityTab: React.FC<MobilityTabProps> = ({ summary }) => {
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              Eats mostly around one neighborhood. Easy to predict preferences
-              based on nearby options.
+              Eats mostly around one neighborhood. Easy to predict preferences based on
+              nearby options.
             </p>
           </div>
 
@@ -327,8 +485,8 @@ const MobilityTab: React.FC<MobilityTabProps> = ({ summary }) => {
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              Regularly visits two distinct areas — typically near home and
-              workplace. Needs separate recommendations for each zone.
+              Regularly visits two distinct areas — typically near home and workplace.
+              Needs separate recommendations for each zone.
             </p>
           </div>
 
@@ -343,19 +501,20 @@ const MobilityTab: React.FC<MobilityTabProps> = ({ summary }) => {
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              Visits restaurants across many different areas. More open to
-              diverse recommendations regardless of location.
+              Visits restaurants across many different areas. More open to diverse
+              recommendations regardless of location.
             </p>
           </div>
 
-          {/* Mini insight */}
+          {/* Mini insight (now dynamic) */}
           <div className="bg-secondary rounded-xl p-4 mt-4">
             <p className="text-xs font-semibold text-muted-foreground mb-2">
               💡 KEY INSIGHT
             </p>
             <p className="text-sm text-foreground">
-              Two-hub users account for <strong>38%</strong> of our sample.
-              Traditional single-centroid methods miss this pattern!
+              Two-hub users account for{" "}
+              <strong>{summary.twoHubPercent}%</strong> of our sample. Traditional
+              single-centroid methods miss this pattern!
             </p>
           </div>
         </div>

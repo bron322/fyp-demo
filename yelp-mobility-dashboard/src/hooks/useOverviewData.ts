@@ -13,7 +13,7 @@ export type CityData = {
   city: string;
   state: string;
   businessCount: number;
-  reviewCount: number;
+  sampleReviews: number;
 };
 
 export type StateRow = {
@@ -77,7 +77,7 @@ export function useOverviewData() {
           city: r.city,
           state: r.state,
           businessCount: Number(r.restaurants ?? 0),
-          reviewCount: Number(r.reviews ?? 0),
+          sampleReviews: Number(r.sample_reviews ?? 0),
         }));
 
         const stateRows = parseCsv(statesCsv).map((r) => {
