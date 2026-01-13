@@ -1,4 +1,3 @@
-```md
 # Yelp Mobility Data Analysis (FYP Demo)
 
 A lightweight web dashboard for exploring **mobility patterns in Yelp users** using **DBSCAN-based spatial hubs**.  
@@ -135,5 +134,3 @@ Final Year Project — Yelp Mobility Data Analysis
 This repository is a **demo UI** for presenting analysis outcomes.
 Core clustering + preprocessing is performed offline and exported into JSON/CSV for visualization.
 
-```
-```
