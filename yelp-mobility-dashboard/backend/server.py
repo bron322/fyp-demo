@@ -15,9 +15,37 @@ import re
 from typing import List, Dict, Any
 from langchain_core.documents import Document
 import json as pyjson
+from pydantic import BaseModel
 
 LAST_PICK = {}  # user_id -> business_id
 
+class ValidateUserRequest(BaseModel):
+    user_id: str
+    
+def normalize_uid(uid: str) -> str:
+    uid = (uid or "").strip()
+    uid = uid.strip('"').strip("'")
+    # handle “smart dash” (—, –) copied from some UIs
+    uid = uid.replace("\u2014", "-").replace("\u2013", "-")
+    return uid
+
+def resolve_user_id(uid: str) -> str | None:
+    # 1) exact
+    if uid in user_profiles:
+        return uid
+
+    # 2) match ignoring leading - and _ (your IDs often start with --- or -_)
+    needle = uid.lstrip("-_")
+    for k in user_profiles.keys():
+        if k.lstrip("-_") == needle:
+            return k
+
+    # 3) last resort: endswith (if user pasted a suffix)
+    for k in user_profiles.keys():
+        if k.endswith(needle):
+            return k
+
+    return None
 def parse_rag_text(text: str) -> Dict[str, Any]:
     def grab(pattern, default=""):
         m = re.search(pattern, text)
@@ -254,6 +282,29 @@ async def chat_endpoint(request: ChatRequest):
         "is_grounded": grounded,
         "evidence": evidence
     }
+
+@app.post("/validate_user")
+async def validate_user(req: ValidateUserRequest):
+    raw = req.user_id
+    uid = normalize_uid(raw)
+
+    found = resolve_user_id(uid)
+    if not found:
+        # helpful suggestions
+        keys = list(user_profiles.keys())
+        suggestions = difflib.get_close_matches(uid, keys, n=5, cutoff=0.3)
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "message": "Unknown user_id",
+                "received": uid,
+                "tip": "Paste the FULL id including leading dashes/underscores (e.g. ---zema...)",
+                "suggestions": suggestions,
+            },
+        )
+
+    preview = user_profiles[found][:300]
+    return {"ok": True, "user_id": found, "preview": preview}
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,16 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import RestaurantDetailsSheet, {
+  type EvidenceItem,
+  type RecommendedRestaurant,
+} from '@/components/RestaurantDetailsSheet';
 
 interface Message {
   id: string;
-  role: 'user' | 'assistant',
-  evidence?: any[];
-  isGrounded?: boolean;
+  role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  recommended?: RecommendedRestaurant;
+  evidence?: EvidenceItem[];
+  isGrounded?: boolean;
 }
 
 const mockResponses = [
@@ -24,55 +29,83 @@ const mockResponses = [
 ];
 
 const ChatbotWidget: React.FC = () => {
+  const [activeUserId, setActiveUserId] = useState<string | null>(
+    localStorage.getItem("rag_user_id")
+  );
+  const [awaitingUserId, setAwaitingUserId] = useState<boolean>(
+    !localStorage.getItem("rag_user_id")
+  );
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: '1',
-      role: 'assistant',
-      content: "Hi! 👋 I'm your Restaurant Recommender. Tell me what kind of food you're in the mood for, and I'll suggest some great places!",
+      id: "1",
+      role: "assistant",
+      content: localStorage.getItem("rag_user_id")
+        ? "Hi! 👋 Tell me what you're in the mood for, and I'll recommend a restaurant."
+        : "Hi! 👋 Before I recommend, please paste your user_id (demo mode).",
       timestamp: new Date(),
     },
-  ]);
+  ]);  
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<RecommendedRestaurant | null>(null);
+  const [selectedEvidence, setSelectedEvidence] = useState<EvidenceItem[]>([]);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  
+  const handleRestaurantClick = (msg: Message) => {
+    if (!msg.recommended) return;
+    setSelectedRestaurant(msg.recommended);
+    setSelectedEvidence(msg.evidence || []);
+    setSheetOpen(true);
+  };
 
+  const renderAssistantMessage = (message: Message) => {
+    // If backend returned a structured recommendation, render clickable title
+    if (message.recommended) {
+      return (
+        <div className="space-y-1.5">
+          <button
+            type="button"
+            onClick={() => handleRestaurantClick(message)}
+            className="flex items-center gap-1.5 group text-left cursor-pointer pointer-events-auto"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
+            <span
+              className="font-bold underline decoration-primary/40 underline-offset-2 group-hover:decoration-primary transition-colors"
+              style={{ color: 'hsl(270 70% 55%)' }}
+            >
+              {message.recommended.name}
+            </span>
+          </button>
+  
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+            {message.content}
+          </p>
+        </div>
+      );
+    }
+  
+    // Normal assistant message (welcome/error): support **bold** formatting
+    return (
+      <>
+        {String(message.content).split('**').map((part, i) =>
+          i % 2 === 1 ? <strong key={i}>{part}</strong> : <span key={i}>{part}</span>
+        )}
+      </>
+    );
+  };  
+  
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-//   const handleSend = () => {
-//     if (!inputValue.trim()) return;
-
-//     const userMessage: Message = {
-//       id: Date.now().toString(),
-//       role: 'user',
-//       content: inputValue,
-//       timestamp: new Date(),
-//     };
-
-//     setMessages((prev) => [...prev, userMessage]);
-//     setInputValue('');
-//     setIsTyping(true);
-
-//     // Simulate AI response
-//     setTimeout(() => {
-//       const randomResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
-//       const assistantMessage: Message = {
-//         id: (Date.now() + 1).toString(),
-//         role: 'assistant',
-//         content: randomResponse,
-//         timestamp: new Date(),
-//       };
-//       setMessages((prev) => [...prev, assistantMessage]);
-//       setIsTyping(false);
-//     }, 1000 + Math.random() * 1000);
-//   };
-
   const handleSend = async () => {
     if (!inputValue.trim()) return;
+
+    const text = inputValue.trim();
 
     // 1. Add User Message to UI immediately
     const userMessage: Message = {
@@ -88,32 +121,101 @@ const ChatbotWidget: React.FC = () => {
 
     try {
       // 2. Call your Python Backend
-      const response = await fetch('http://localhost:8000/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-            message: userMessage.content,
-            user_id: "---zemaUC8WeJeWKqS6p9Q" // <--- Replace with dynamic ID or one from your CSV
+      // const response = await fetch('http://localhost:8000/chat', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({ 
+      //       message: userMessage.content,
+      //       user_id: "---zemaUC8WeJeWKqS6p9Q" // <--- Replace with dynamic ID or one from your CSV
+      //   }),
+      // });
+      // ✅ Step 0: if we still need user_id, treat message as user_id
+      if (awaitingUserId || !activeUserId) {
+        const res = await fetch("http://localhost:8000/validate_user", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: text }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: (Date.now() + 1).toString(),
+              role: "assistant",
+              content: `I can't find that user_id. Try again.\n\nTip: copy the exact ID from your dataset.`,
+              timestamp: new Date(),
+            },
+          ]);
+          return;
+        }
+
+        const data = await res.json();
+        const uid = String(data.user_id);
+
+        setActiveUserId(uid);
+        localStorage.setItem("rag_user_id", uid);
+        setAwaitingUserId(false);
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content: `✅ Loaded profile: ${uid}\nNow tell me what kind of food you want (e.g., "dinner", "steakhouse", "italian").`,
+            timestamp: new Date(),
+          },
+        ]);
+        return;
+      }
+
+      // ✅ Step 1: normal chat
+      const response = await fetch("http://localhost:8000/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userMessage.content,
+          user_id: activeUserId,
         }),
       });
-
       const data = await response.json();
 
       // 3. Add AI Response to UI
-      const assistantText =
-        typeof data.reply === "string"
-          ? data.reply
-          : `✅ ${data.reply?.name ?? "Recommendation"}\n${data.reply?.reason ?? ""}`;
+      const recommended: RecommendedRestaurant | undefined =
+      typeof data.reply === "string"
+        ? undefined
+        : {
+            business_id: String(data.reply.business_id),
+            name: String(data.reply.name),
+            reason: String(data.reply.reason ?? ""),
+          };
+
+      // optional: ensure evidence fields are consistent types
+      const evidence: EvidenceItem[] = Array.isArray(data.evidence)
+      ? data.evidence.map((e: any) => ({
+          business_id: String(e.business_id),
+          name_meta: String(e.name_meta ?? e.name ?? ""),
+          categories: String(e.categories ?? ""),
+          city: String(e.city ?? ""),
+          state: String(e.state ?? ""),
+          rating: Number(e.rating ?? 0),                 // ✅ number
+          review_count: Number(e.review_count ?? 0),     // ✅ number
+          score: Number(e.score ?? 0),                   // ✅ number
+        }))
+      : [];
 
       const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: assistantText,        // ✅ always string
-        evidence: data.evidence,
-        isGrounded: data.is_grounded,
-        timestamp: new Date(),
+      id: (Date.now() + 1).toString(),
+      role: "assistant",
+      // content becomes the explanation text shown under the clickable title
+      content: recommended ? recommended.reason : String(data.reply),
+      recommended,
+      evidence,
+      isGrounded: Boolean(data.is_grounded),
+      timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -184,11 +286,24 @@ const ChatbotWidget: React.FC = () => {
           </div>
           <Button
             variant="ghost"
-            size="icon"
-            onClick={() => setIsOpen(false)}
-            className="text-white hover:bg-white/20 rounded-full"
+            size="sm"
+            onClick={() => {
+              localStorage.removeItem("rag_user_id");
+              setActiveUserId(null);
+              setAwaitingUserId(true);
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: Date.now().toString(),
+                  role: "assistant",
+                  content: "Paste your user_id to continue (demo mode).",
+                  timestamp: new Date(),
+                },
+              ]);
+            }}
+            className="text-white/90 hover:bg-white/20 rounded-full"
           >
-            <X className="w-5 h-5" />
+            Change user
           </Button>
         </div>
 
@@ -223,9 +338,9 @@ const ChatbotWidget: React.FC = () => {
                       : 'bg-secondary text-foreground rounded-bl-md'
                   }`}
                 >
-                  {String(message.content).split('**').map((part, i) =>
-                    i % 2 === 1 ? <strong key={i}>{part}</strong> : <span key={i}>{part}</span>
-                  )}
+                  {message.role === "assistant"
+                  ? renderAssistantMessage(message)
+                  : message.content}
                 </div>
               </div>
             ))}
@@ -277,6 +392,14 @@ const ChatbotWidget: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <RestaurantDetailsSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        restaurant={selectedRestaurant}
+        evidence={selectedEvidence}
+      />
+
     </>
   );
 };
