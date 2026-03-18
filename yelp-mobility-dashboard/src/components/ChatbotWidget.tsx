@@ -7,6 +7,7 @@ import RestaurantDetailsSheet, {
   type EvidenceItem,
   type RecommendedRestaurant,
 } from '@/components/RestaurantDetailsSheet';
+// import TravelModeToggle from '@/components/TravelModeToggle';
 
 interface Message {
   id: string;
@@ -16,17 +17,10 @@ interface Message {
   recommended?: RecommendedRestaurant;
   evidence?: EvidenceItem[];
   isGrounded?: boolean;
+  travelMode?: 'local' | 'explorer';
+  locationMode?: 'city' | 'state' | 'global';
+  inferredLocation?: { city?: string; state?: string } | null;
 }
-
-const mockResponses = [
-  "Based on your location preferences, I'd recommend **Bella Italia** in downtown Philadelphia - it has a 4.5 star rating and is known for authentic pasta dishes!",
-  "For a quick bite, try **Joe's Diner** on Market Street. It's popular among locals for breakfast and has great reviews for its pancakes!",
-  "If you're looking for something upscale, **The Capital Grille** in Center City has excellent steaks and a sophisticated atmosphere. Perfect for special occasions!",
-  "Want something casual? **Shake Shack** at Rittenhouse Square is always a hit - great burgers and the outdoor seating is lovely in good weather.",
-  "For authentic Mexican, check out **El Vez** - their tacos and margaritas are top-rated in the city!",
-  "I noticed you prefer Italian cuisine! **Osteria** by Marc Vetri is a James Beard Award winner - definitely worth the visit.",
-  "Looking for vegetarian options? **HipCityVeg** has amazing plant-based burgers and smoothies. Very popular with the health-conscious crowd!",
-];
 
 const ChatbotWidget: React.FC = () => {
   const [activeUserId, setActiveUserId] = useState<string | null>(
@@ -35,6 +29,7 @@ const ChatbotWidget: React.FC = () => {
   const [awaitingUserId, setAwaitingUserId] = useState<boolean>(
     !localStorage.getItem("rag_user_id")
   );
+  // const [travelMode, setTravelMode] = useState<'local' | 'explorer'>('local');
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -52,7 +47,12 @@ const ChatbotWidget: React.FC = () => {
   const [selectedRestaurant, setSelectedRestaurant] = useState<RecommendedRestaurant | null>(null);
   const [selectedEvidence, setSelectedEvidence] = useState<EvidenceItem[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
-  
+  // const travelModeRef = useRef<'local' | 'explorer'>(travelMode);
+
+  // useEffect(() => {
+  //   travelModeRef.current = travelMode;
+  // }, [travelMode]);
+
   const handleRestaurantClick = (msg: Message) => {
     if (!msg.recommended) return;
     setSelectedRestaurant(msg.recommended);
@@ -106,6 +106,8 @@ const ChatbotWidget: React.FC = () => {
     if (!inputValue.trim()) return;
 
     const text = inputValue.trim();
+    // const modeAtSend = travelModeRef.current;
+    // console.log("travel ref:", modeAtSend);
 
     // 1. Add User Message to UI immediately
     const userMessage: Message = {
@@ -208,14 +210,16 @@ const ChatbotWidget: React.FC = () => {
       : [];
 
       const assistantMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      role: "assistant",
-      // content becomes the explanation text shown under the clickable title
-      content: recommended ? recommended.reason : String(data.reply),
-      recommended,
-      evidence,
-      isGrounded: Boolean(data.is_grounded),
-      timestamp: new Date(),
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        // content becomes the explanation text shown under the clickable title
+        content: recommended ? recommended.reason : String(data.reply),
+        recommended,
+        evidence,
+        isGrounded: Boolean(data.is_grounded),
+        timestamp: new Date(),
+        locationMode: data.location_mode,             // "city" | "state" | "global"
+        inferredLocation: data.inferred_location ?? null, // { city, state } or null
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -306,6 +310,14 @@ const ChatbotWidget: React.FC = () => {
             Change user
           </Button>
         </div>
+
+        {/* Travel Mode Toggle
+        <div className="px-4 py-3 bg-card border-b border-border flex justify-between items-end">
+          <div>
+            <p className="text-xs font-semibold text-foreground mb-2">Travel Preference</p>
+            <TravelModeToggle value={travelMode} onChange={setTravelMode} />
+          </div>
+        </div> */}
 
         {/* Messages */}
         <ScrollArea className="flex-1 bg-card" ref={scrollRef}>

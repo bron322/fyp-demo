@@ -26,7 +26,7 @@ const Header: React.FC<HeaderProps> = ({
   const tabs = [
     { id: 'overview' as const, label: 'Overview' },
     { id: 'mobility' as const, label: 'Mobility Patterns' },
-    { id: 'user-dive' as const, label: 'User Deep Dive' },
+    // { id: 'user-dive' as const, label: 'User Deep Dive' },
   ];
 
   return (
