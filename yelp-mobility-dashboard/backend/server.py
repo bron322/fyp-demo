@@ -20,11 +20,14 @@ import difflib
 from typing import Literal
 from typing import Optional, Tuple
 from functools import lru_cache
+from pathlib import Path
+from dotenv import load_dotenv
 
 STEP2_MOBILITY_TABLE_PATH = r"C:\Users\lebro\OneDrive - Nanyang Technological University\Github\YelpFYP\step2_outputs\user_mobility_table.csv"
 STEP2_USER_HUBS_PATH = r"C:\Users\lebro\OneDrive - Nanyang Technological University\Github\YelpFYP\step2_outputs\user_hubs.csv"
 STEP3_CANDIDATES_PATH = r"C:\Users\lebro\OneDrive - Nanyang Technological University\Github\YelpFYP\step3_outputs\step3_candidates.parquet"
-
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
 LAST_PICK = {}  # user_id -> business_id
 
 class ValidateUserRequest(BaseModel):
@@ -188,7 +191,7 @@ try:
         for d in docs
     }
 
-    REBUILD_FAISS = True
+    REBUILD_FAISS = False
 
     if os.path.exists(INDEX_FOLDER) and not REBUILD_FAISS:
         vectorstore = FAISS.load_local(
